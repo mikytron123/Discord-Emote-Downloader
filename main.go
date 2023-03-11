@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"golang.org/x/term"
+    "time"
+	"log"
+//	"golang.org/x/term"
+	"github.com/joho/godotenv"
 )
 
 func getrequest(url string, token string) []byte {
@@ -40,12 +42,10 @@ func main() {
 		Icon        string   `json:"icon"`
 		Owner       bool     `json:"owner"`
 		Permissions string   `json:"permissions"`
-		Features    []string `json:"features"`
 	}
 
 	type Emojis []struct {
 		Name          string        `json:"name"`
-		Roles         []interface{} `json:"roles"`
 		ID            string        `json:"id"`
 		RequireColons bool          `json:"require_colons"`
 		Managed       bool          `json:"managed"`
@@ -53,13 +53,22 @@ func main() {
 		Available     bool          `json:"available"`
 	}
 
-	fmt.Print("Enter your discord token: ")
-	hidden, err := term.ReadPassword(int(os.Stdin.Fd()))
+	type Stickers []struct {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		FormatType  int    `json:"format_type"`
+	}
+
+	err := godotenv.Load()
+    if err != nil {
+		log.Fatal("Error loading .env file")
+    }
+	//hidden, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil{
 		fmt.Print(err)
 	}
-	fmt.Print(string(hidden))
-	token := string(hidden)
+	//fmt.Print(string(hidden))
+	token := string(os.Getenv("AUTH"))
 	base_url := "https://discord.com/api/v10"
 	guildsurl := base_url + "/users/@me/guilds"
 
@@ -70,11 +79,12 @@ func main() {
 
 	for _, server := range serverlist {
 		emojiurl := fmt.Sprintf(base_url+"/guilds/%v/emojis", server.ID)
+		time.Sleep(1 * time.Second)
 		body := getrequest(emojiurl, token)
 		var emojilist Emojis
 		err := json.Unmarshal(body, &emojilist)
 		if err != nil {
-			fmt.Print("error in json marshall" + server.ID)
+			fmt.Print("error in json marshall emote" + server.ID)
 		}
 		var tempresult []map[string]string
 		for _, emote := range emojilist {
@@ -90,6 +100,31 @@ func main() {
 			tempresult = append(tempresult, tempmap)
 		}
 		result = append(result, tempresult...)
+
+		stickerurl := fmt.Sprintf(base_url+"/guilds/%v/stickers", server.ID)
+		time.Sleep(1 * time.Second)
+		stickerbody := getrequest(stickerurl, token)
+
+		var stickerlist Stickers
+		err2 := json.Unmarshal(stickerbody, &stickerlist)		
+		if err2 != nil {
+			fmt.Print("error in json marshall sticker " + server.ID)
+			fmt.Print(err2)
+			fmt.Print(string(stickerbody))
+			break
+		}
+		var tempstickerresult []map[string]string
+		for _, sticker := range stickerlist {
+			tempmap := make(map[string]string)
+			if sticker.FormatType == 1 {
+				tempmap["name"] = sticker.Name
+				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
+			    tempstickerresult = append(tempstickerresult, tempmap)
+			}
+			
+		}
+		result = append(result, tempstickerresult...)
+
 	}
 	jsonstr, _ := json.Marshal(result)
 
