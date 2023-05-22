@@ -58,6 +58,7 @@ func main() {
 		ID         string `json:"id"`
 		Name       string `json:"name"`
 		FormatType int    `json:"format_type"`
+		Tags       string `json:"tags"`
 	}
 
 	type StickerPackList struct {
@@ -95,8 +96,15 @@ func main() {
 			if sticker.FormatType == 3 {
 				name := stickerpack.Name + " " + sticker.Name
 				url := "https://cdn.discordapp.com/stickers/" + sticker.ID + ".json"
-				result = append(result, map[string]string{"name": name, "url": url})
+				result = append(result, map[string]string{"name": name, "url": url,"tags":sticker.Tags})
+			
+		    }else if sticker.FormatType == 2 {
+                 name := stickerpack.Name + " " + sticker.Name
+				 url := "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
+				 result = append(result,map[string]string{"name":name,"url":url,"tags":sticker.Tags})
+           
 			}
+
 		}
 	}
 
@@ -126,6 +134,7 @@ func main() {
 				ext = ".png"
 			}
 			tempmap["url"] = "https://cdn.discordapp.com/emojis/" + emote.ID + ext
+			tempmap["tags"] = ""
 			tempresult = append(tempresult, tempmap)
 		}
 		result = append(result, tempresult...)
@@ -148,6 +157,7 @@ func main() {
 			if sticker.FormatType == 1 {
 				tempmap["name"] = sticker.Name
 				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
+				tempmap["tags"] = sticker.Tags
 				tempstickerresult = append(tempstickerresult, tempmap)
 				continue
 			}
@@ -155,6 +165,7 @@ func main() {
 			if sticker.FormatType == 2 {
 				tempmap["name"] = sticker.Name
 				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
+				tempmap["tags"] = sticker.Tags
 				tempstickerresult = append(tempstickerresult, tempmap)
 			}
 
