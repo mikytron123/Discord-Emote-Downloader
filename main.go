@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	//	"golang.org/x/term"
 	"github.com/joho/godotenv"
 )
 
@@ -61,52 +59,18 @@ func main() {
 		Tags       string `json:"tags"`
 	}
 
-	type StickerPackList struct {
-		StickerPacks []struct {
-			ID       string `json:"id"`
-			Stickers StickerList `json:"stickers"`
-			Name string `json:"name"`
-		} `json:"sticker_packs"`
-	}
-
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	//hidden, err := term.ReadPassword(int(os.Stdin.Fd()))
+
 	if err != nil {
 		fmt.Print(err)
 	}
-	//fmt.Print(string(hidden))
+
 	token := string(os.Getenv("AUTH"))
 	base_url := "https://discord.com/api/v10"
 	var result []map[string]string
-
-	stickerpackurl := fmt.Sprintf(base_url + "/sticker-packs")
-	stickerpackbody := getrequest(stickerpackurl, token)
-
-	var stickerpacklist StickerPackList
-	error := json.Unmarshal(stickerpackbody, &stickerpacklist)
-	if error != nil {
-		fmt.Print("error in json marshall stickerpack list ")
-		fmt.Print(error)
-	}
-	for _, stickerpack := range stickerpacklist.StickerPacks {
-		for _, sticker := range stickerpack.Stickers {
-			if sticker.FormatType == 3 {
-				name := stickerpack.Name + " " + sticker.Name
-				url := "https://cdn.discordapp.com/stickers/" + sticker.ID + ".json"
-				result = append(result, map[string]string{"name": name, "url": url,"tags":sticker.Tags})
-			
-		    }else if sticker.FormatType == 2 {
-                 name := stickerpack.Name + " " + sticker.Name
-				 url := "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
-				 result = append(result,map[string]string{"name":name,"url":url,"tags":sticker.Tags})
-           
-			}
-
-		}
-	}
 
 	guildsurl := base_url + "/users/@me/guilds"
 
@@ -135,6 +99,7 @@ func main() {
 			}
 			tempmap["url"] = "https://cdn.discordapp.com/emojis/" + emote.ID + ext
 			tempmap["tags"] = ""
+			tempmap["type"] = "emote"
 			tempresult = append(tempresult, tempmap)
 		}
 		result = append(result, tempresult...)
@@ -158,14 +123,15 @@ func main() {
 				tempmap["name"] = sticker.Name
 				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
 				tempmap["tags"] = sticker.Tags
+				tempmap["type"] = "sticker"
 				tempstickerresult = append(tempstickerresult, tempmap)
 				continue
 			}
-			//}else if sticker.FormatType == 4 {
 			if sticker.FormatType == 2 {
 				tempmap["name"] = sticker.Name
 				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
 				tempmap["tags"] = sticker.Tags
+				tempmap["type"] = "apng" 
 				tempstickerresult = append(tempstickerresult, tempmap)
 			}
 
