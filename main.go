@@ -64,79 +64,82 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	if err != nil {
-		fmt.Print(err)
-	}
-
 	token := string(os.Getenv("AUTH"))
-	base_url := "https://discord.com/api/v10"
+	baseUrl := "https://discord.com/api/v10"
 	var result []map[string]string
 
-	guildsurl := base_url + "/users/@me/guilds"
+	guildsurl := baseUrl + "/users/@me/guilds"
 
 	body := getrequest(guildsurl, token)
-	var serverlist Server
-	json.Unmarshal(body, &serverlist)
-
-	for _, server := range serverlist {
-		emojiurl := fmt.Sprintf(base_url+"/guilds/%v/emojis", server.ID)
+	var serverList Server
+	json.Unmarshal(body, &serverList)
+    
+	emojiBaseUrl := "https://cdn.discordapp.com/emojis/"
+	stickerBaseUrl := "https://cdn.discordapp.com/stickers/"
+	for _, server := range serverList {
+		emojiurl := fmt.Sprintf("%v/guilds/%v/emojis",baseUrl, server.ID)
 		time.Sleep(1 * time.Second)
 		body := getrequest(emojiurl, token)
-		var emojilist Emojis
-		err := json.Unmarshal(body, &emojilist)
+		var emojiList Emojis
+		err = json.Unmarshal(body, &emojiList)
 		if err != nil {
 			fmt.Print("error in json marshall emote" + server.ID)
 		}
-		var tempresult []map[string]string
-		for _, emote := range emojilist {
-			tempmap := make(map[string]string)
+        
+		for _, emote := range emojiList {
+			tempMap := make(map[string]string)
 			var ext string
-			tempmap["name"] = emote.Name
+
 			if emote.Animated {
 				ext = ".gif"
 			} else {
 				ext = ".png"
 			}
-			tempmap["url"] = "https://cdn.discordapp.com/emojis/" + emote.ID + ext
-			tempmap["tags"] = ""
-			tempmap["type"] = "emote"
-			tempresult = append(tempresult, tempmap)
+			tempMap["name"] = emote.Name
+			tempMap["url"] = fmt.Sprintf("%v%v%v",emojiBaseUrl,emote.ID,ext)
+			tempMap["tags"] = ""
+			tempMap["type"] = "emote"
+			result = append(result, tempMap)
 		}
-		result = append(result, tempresult...)
 
-		stickerurl := fmt.Sprintf(base_url+"/guilds/%v/stickers", server.ID)
+		stickerUrl := fmt.Sprintf("%v/guilds/%v/stickers",baseUrl, server.ID)
 		time.Sleep(1 * time.Second)
-		stickerbody := getrequest(stickerurl, token)
+		stickerBody := getrequest(stickerUrl, token)
 
-		var stickerlist StickerList
-		err2 := json.Unmarshal(stickerbody, &stickerlist)
-		if err2 != nil {
+		var stickerList StickerList
+		err = json.Unmarshal(stickerBody, &stickerList)
+		
+		if err != nil {
 			fmt.Print("error in json marshall sticker " + server.ID)
-			fmt.Print(err2)
-			fmt.Print(string(stickerbody))
+			fmt.Print(err)
+			fmt.Print(string(stickerBody))
 			break
 		}
-		var tempstickerresult []map[string]string
-		for _, sticker := range stickerlist {
-			tempmap := make(map[string]string)
+		
+
+		for _, sticker := range stickerList {
+			tempMap := make(map[string]string)
+			var ext string
+			var stickerType string
 			if sticker.FormatType == 1 {
-				tempmap["name"] = sticker.Name
-				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
-				tempmap["tags"] = sticker.Tags
-				tempmap["type"] = "sticker"
-				tempstickerresult = append(tempstickerresult, tempmap)
+				ext = ".png"
+				stickerType = "sticker"
+			}else if sticker.FormatType == 2 {
+				ext = ".png"
+				stickerType = "apng"
+			}else if sticker.FormatType == 4 {
+				ext = ".gif"
+				stickerType = "sticker"
+			}else{
 				continue
 			}
-			if sticker.FormatType == 2 {
-				tempmap["name"] = sticker.Name
-				tempmap["url"] = "https://cdn.discordapp.com/stickers/" + sticker.ID + ".png"
-				tempmap["tags"] = sticker.Tags
-				tempmap["type"] = "apng" 
-				tempstickerresult = append(tempstickerresult, tempmap)
-			}
 
+			tempMap["name"] = sticker.Name
+			tempMap["url"] = fmt.Sprintf("%v%v%v",stickerBaseUrl,sticker.ID,ext)   
+			tempMap["tags"] = sticker.Tags
+			tempMap["type"] = stickerType
+            result = append(result, tempMap)				
 		}
-		result = append(result, tempstickerresult...)
 
 	}
 
